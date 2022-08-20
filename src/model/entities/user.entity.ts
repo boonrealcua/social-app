@@ -6,13 +6,10 @@ import { BeforeInsert, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 })
 export class UserEntity {
   @PrimaryGeneratedColumn()
-  id_user: number;
+  id: number;
 
   @Column()
   name: string;
-
-  @Column()
-  surname: string;
 
   @Column()
   @IsEmail()
@@ -25,10 +22,19 @@ export class UserEntity {
   profileImg: string;
 
   @Column()
-  createdAt: Date;
+  location: string;
 
   @Column()
-  gender: string;
+  bio: string;
+
+  @Column()
+  instagramUrl: string;
+
+  @Column()
+  linkedinUrl: string;
+
+  @Column()
+  facebookUrl: string;
 
   @Column()
   birthDate: Date;
