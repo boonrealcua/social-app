@@ -25,6 +25,9 @@ export class UserEntity {
   location: string;
 
   @Column()
+  birthDate: Date;
+
+  @Column()
   bio: string;
 
   @Column()
@@ -35,9 +38,6 @@ export class UserEntity {
 
   @Column()
   facebookUrl: string;
-
-  @Column()
-  birthDate: Date;
 
   @BeforeInsert()
   emailToLowerCase() {

@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Observable, from, map, switchMap } from 'rxjs';
+import { Observable, from, map, switchMap, throwError, catchError } from 'rxjs';
 import { UserEntity } from 'src/model/entities/user.entity';
 import { Repository } from 'typeorm';
 import { AuthService } from '../auth/auth.service';
@@ -13,17 +18,51 @@ export class UserService {
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
-    private authService: AuthService,
+    private readonly authService: AuthService,
   ) {}
-  async createUser(user: CreateUserDto) {
-    return this.userRepository.save(user);
+
+  createUser(user: CreateUserDto): Observable<User> {
+    return from(this.findOneByEmail(user.email)).pipe(
+      switchMap(() => {
+        return this.authService.hashPassword(user.password).pipe(
+          switchMap((passwordHash: string) => {
+            const newUser = new UserEntity();
+            newUser.email = user.email;
+            newUser.password = passwordHash;
+
+            return from(this.userRepository.save(newUser)).pipe(
+              map((user: User) => {
+                const { password, ...result } = user;
+                return result;
+              }),
+              catchError((err) => throwError(err)),
+            );
+          }),
+        );
+      }),
+    );
+  }
+
+  findByEmail(email: string): Observable<User> {
+    return from(this.userRepository.findOneBy({ email })).pipe(
+      map((username: User) => {
+        if (!username) {
+          throw new NotFoundException('This username not exist');
+        }
+        return username;
+      }),
+    );
   }
 
   async findOneByEmail(email: string) {
-    return await this.userRepository.findBy({ email });
+    const user = await this.userRepository.findOneBy({ email });
+    if (user) {
+      throw new NotFoundException('This email already exists');
+    }
+    return user;
   }
 
-  findOne(id: number): Observable<User> {
+  findById(id: number): Observable<User> {
     return from(this.userRepository.findOneBy({ id })).pipe(
       map((user: User) => {
         if (!user) {
@@ -49,8 +88,8 @@ export class UserService {
     );
   }
 
-  validateUser(email: string, password: string): Observable<User> {
-    return this.findByEmail(email).pipe(
+  validateUser(username: string, password: string): Observable<User> {
+    return this.findByEmail(username).pipe(
       // tap(() => console.log(password)),
       switchMap((user: User) =>
         this.authService.comparePassword(password, user.password).pipe(
@@ -64,16 +103,6 @@ export class UserService {
           }),
         ),
       ),
-    );
-  }
-  findByEmail(email: string): Observable<User> {
-    return from(this.userRepository.findOneBy({ email })).pipe(
-      map((email: User) => {
-        if (!email) {
-          throw new NotFoundException('This username not exist');
-        }
-        return email;
-      }),
     );
   }
 }

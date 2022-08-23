@@ -10,7 +10,7 @@ import { JwtStrategy } from './strategy/jwt.strategy';
     UserModule,
     JwtModule.register({
       secret: 'JWT_SECRET_NO_EXPLOIT',
-      signOptions: { expiresIn: '36000s' },
+      signOptions: { expiresIn: '3600s' },
     }),
   ],
   providers: [AuthService, JwtAuthGuard, JwtStrategy],
