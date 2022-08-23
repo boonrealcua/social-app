@@ -7,7 +7,7 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { ApiOkResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOkResponse, ApiTags } from '@nestjs/swagger';
 import { Observable, map } from 'rxjs';
 import { UserService } from 'src/modules/user/user.service';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
@@ -41,6 +41,7 @@ export class UserController {
   }
 
   @Get('find')
+  @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   findEmail(@Param('email') email: string): any {
     return this.userService.findByEmail(email);
