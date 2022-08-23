@@ -41,8 +41,8 @@ export class UserController {
   }
 
   @Get('find')
-  // @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   findEmail(@Param('email') email: string): any {
-    return this.userService.findOneByEmail(email);
+    return this.userService.findByEmail(email);
   }
 }
