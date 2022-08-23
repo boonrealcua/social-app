@@ -2,6 +2,7 @@
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserEntity } from './model/entities/user.entity';
 import { AuthModule } from './modules/auth/auth.module';
+import { PostModule } from './modules/post/post.module';
 // import { QueueModule } from './modules/queue/queue.module';
 import { UserModule } from './modules/user/user.module';
 
@@ -26,5 +27,6 @@ export const Modules = [
   // }),
   UserModule,
   AuthModule,
+  PostModule,
   // QueueModule,
 ];
