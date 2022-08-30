@@ -1,6 +1,8 @@
 // import { BullModule } from '@nestjs/bull';
 import { BullModule } from '@nestjs/bull';
+import { ServeStaticModule } from '@nestjs/serve-static/dist/serve-static.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { join } from 'path';
 import { UserEntity } from './model/entities/user.entity';
 import { AuthModule } from './modules/auth/auth.module';
 import { PostModule } from './modules/post/post.module';
@@ -19,6 +21,9 @@ export const Modules = [
       entities: [UserEntity],
       synchronize: true,
     }),
+  }),
+  ServeStaticModule.forRoot({
+    rootPath: join(__dirname, '..', '..', 'public'),
   }),
   // BullModule.forRoot({
   //   redis: {

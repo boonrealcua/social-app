@@ -15,6 +15,7 @@ import { ResponseLogin } from '../auth/dto/response-login.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { loginDto } from './dto/login.dto';
 import { Cache } from 'cache-manager';
+import { UpdateUserDto } from './dto/update-user.dto';
 @Injectable()
 export class UserService {
   constructor(
@@ -121,5 +122,28 @@ export class UserService {
       throw new HttpException('Account Not Found', HttpStatus.BAD_REQUEST);
     }
     return user;
+  }
+
+  async UpdateUser(
+    user_id: number,
+    updateUser: UpdateUserDto,
+  ): Promise<Partial<UserEntity>> {
+    const updateNewUser = new UserEntity();
+    updateNewUser.name = updateUser.name;
+    updateNewUser.location = updateUser.location;
+    updateNewUser.birthDate = updateUser.birthDate;
+    updateNewUser.bio = updateUser.bio;
+    updateNewUser.instagramUrl = updateUser.instagramUrl;
+    updateNewUser.linkedinUrl = updateUser.linkedinUrl;
+    updateNewUser.facebookUrl = updateUser.facebookUrl;
+
+    await this.userRepository.update(user_id, updateNewUser);
+    const { password, ...rs } = await this.findUserById(user_id);
+
+    return rs;
+  }
+
+  uploadMediaUser(user_id: number, profileImg: string) {
+    return this.userRepository.update(user_id, { profileImg: profileImg });
   }
 }
