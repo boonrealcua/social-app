@@ -1,11 +1,13 @@
 export interface User {
-  id?: number;
+  user_id?: number;
   name?: string;
-  surname?: string;
-  birthDate: Date;
   email?: string;
   password?: string;
   profileImg?: string;
-  createdAt?: Date;
-  gender?: string;
+  location?: string;
+  birthDate?: Date;
+  bio?: string;
+  instagramUrl?: string;
+  linkedinUrl?: string;
+  facebookUrl?: string;
 }

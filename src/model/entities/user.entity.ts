@@ -6,9 +6,9 @@ import { BeforeInsert, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 })
 export class UserEntity {
   @PrimaryGeneratedColumn()
-  id: number;
+  user_id: number;
 
-  @Column()
+  @Column({ nullable: true })
   name: string;
 
   @Column()
@@ -21,22 +21,22 @@ export class UserEntity {
   @Column({ nullable: true })
   profileImg: string;
 
-  @Column()
+  @Column({ nullable: true })
   location: string;
 
-  @Column()
+  @Column({ nullable: true })
   birthDate: Date;
 
-  @Column()
+  @Column({ nullable: true })
   bio: string;
 
-  @Column()
+  @Column({ nullable: true })
   instagramUrl: string;
 
-  @Column()
+  @Column({ nullable: true })
   linkedinUrl: string;
 
-  @Column()
+  @Column({ nullable: true })
   facebookUrl: string;
 
   @BeforeInsert()

@@ -1,4 +1,5 @@
 // import { BullModule } from '@nestjs/bull';
+import { BullModule } from '@nestjs/bull';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserEntity } from './model/entities/user.entity';
 import { AuthModule } from './modules/auth/auth.module';

@@ -2,107 +2,124 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
-  NotFoundException,
+  CACHE_MANAGER,
+  Inject,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Observable, from, map, switchMap, throwError, catchError } from 'rxjs';
+import { createHash } from 'crypto';
 import { UserEntity } from 'src/model/entities/user.entity';
 import { Repository } from 'typeorm';
 import { AuthService } from '../auth/auth.service';
+import { RefreshAccessTokenDto } from '../auth/dto/refresh-access-token.dto';
+import { ResponseLogin } from '../auth/dto/response-login.dto';
 import { CreateUserDto } from './dto/create-user.dto';
 import { loginDto } from './dto/login.dto';
-import { User } from './user.interface';
-
+import { Cache } from 'cache-manager';
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(UserEntity)
     private readonly userRepository: Repository<UserEntity>,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private readonly authService: AuthService,
   ) {}
 
-  createUser(user: CreateUserDto): Observable<User> {
-    return from(this.findOneByEmail(user.email)).pipe(
-      switchMap(() => {
-        return this.authService.hashPassword(user.password).pipe(
-          switchMap((passwordHash: string) => {
-            const newUser = new UserEntity();
-            newUser.email = user.email;
-            newUser.password = passwordHash;
+  async createUser(user: CreateUserDto): Promise<any> {
+    if (await this.checkUserEmailExisted(user.email)) {
+      throw new HttpException('Email already exists', HttpStatus.CONFLICT);
+    }
 
-            return from(this.userRepository.save(newUser)).pipe(
-              map((user: User) => {
-                const { password, ...result } = user;
-                return result;
-              }),
-              catchError((err) => throwError(err)),
-            );
-          }),
-        );
-      }),
-    );
+    const newUser = new UserEntity();
+
+    newUser.email = user.email;
+    newUser.password = await this.authService.hashPassword(user.password);
+
+    await this.userRepository.save(newUser);
+    const { password, ...rs } = newUser;
+
+    return rs;
   }
 
-  findByEmail(email: string): Observable<User> {
-    return from(this.userRepository.findOneBy({ email })).pipe(
-      map((username: User) => {
-        if (!username) {
-          throw new NotFoundException('This username not exist');
-        }
-        return username;
-      }),
+  async login(loginDTO: loginDto): Promise<ResponseLogin> {
+    const user: UserEntity = await this.findUserByEmail(loginDTO.email);
+
+    if (
+      (await this.authService.comparePassword(
+        loginDTO.password,
+        user.password,
+      )) == false
+    ) {
+      throw new HttpException('UNAUTHORIZED', HttpStatus.UNAUTHORIZED);
+    }
+
+    const accessToken = this.authService.generateAccessToken({
+      user_id: user.user_id,
+    });
+    const refreshToken = await this.authService.generateRefreshToken(
+      accessToken.accessToken,
     );
+
+    return {
+      ...accessToken,
+      ...refreshToken,
+    };
   }
 
-  async findOneByEmail(email: string) {
+  async refreshAccessToken(
+    refreshAccessTokenDto: RefreshAccessTokenDto,
+  ): Promise<ResponseLogin> {
+    const { refreshToken, accessToken } = refreshAccessTokenDto;
+    console.log('refreshToken', refreshToken);
+    console.log('accessToken', accessToken);
+    const oldHashAccessToken = await this.cacheManager.get<string>(
+      `${'AUTH_CACHE'}${refreshToken}`,
+    );
+    if (!oldHashAccessToken)
+      throw new HttpException('REFRESH_TOKEN_EXPIRED', HttpStatus.BAD_REQUEST);
+
+    const hashAccessToken = createHash('sha256')
+      .update(accessToken)
+      .digest('hex');
+    if (hashAccessToken == oldHashAccessToken) {
+      const oldPayload = await this.authService.decodeAccessToken(accessToken);
+      delete oldPayload.iat;
+      delete oldPayload.exp;
+      const newAccessToken = this.authService.generateAccessToken(oldPayload);
+      const newRefreshToken = await this.authService.generateRefreshToken(
+        newAccessToken.accessToken,
+      );
+      await this.cacheManager.del(`${'AUTH_CACHE'}${refreshToken}`);
+      return {
+        ...newAccessToken,
+        ...newRefreshToken,
+      };
+    } else
+      throw new HttpException('REFRESH_TOKEN_EXPIRED', HttpStatus.BAD_REQUEST);
+  }
+
+  async checkUserEmailExisted(email: string): Promise<boolean> {
+    const user = await this.userRepository.findOne({
+      where: {
+        email: email,
+      },
+      select: ['email'],
+    });
+    return !!user;
+  }
+
+  async findUserByEmail(email: string): Promise<UserEntity> {
     const user = await this.userRepository.findOneBy({ email });
-    if (user) {
-      throw new NotFoundException('This email already exists');
+    if (!user) {
+      throw new HttpException('Account Not Found', HttpStatus.BAD_REQUEST);
     }
     return user;
   }
 
-  findById(id: number): Observable<User> {
-    return from(this.userRepository.findOneBy({ id })).pipe(
-      map((user: User) => {
-        if (!user) {
-          throw new NotFoundException('This user not exist');
-        }
-        const { password, ...rs } = user;
-        return rs;
-      }),
-    );
-  }
-
-  login(user: loginDto): Observable<string> {
-    return this.validateUser(user.email, user.password).pipe(
-      switchMap((user: User) => {
-        if (user) {
-          return this.authService
-            .generateJWT(user)
-            .pipe(map((jwt: string) => jwt));
-        } else {
-          return 'Username or Password Wrong!!!';
-        }
-      }),
-    );
-  }
-
-  validateUser(username: string, password: string): Observable<User> {
-    return this.findByEmail(username).pipe(
-      // tap(() => console.log(password)),
-      switchMap((user: User) =>
-        this.authService.comparePassword(password, user.password).pipe(
-          map((match: boolean) => {
-            if (match) {
-              const { password, ...rs } = user;
-              return rs;
-            } else {
-              throw new NotFoundException('Password Wrong!!!');
-            }
-          }),
-        ),
-      ),
-    );
+  async findUserById(user_id: number): Promise<UserEntity> {
+    const user = await this.userRepository.findOneBy({ user_id });
+    if (!user) {
+      throw new HttpException('Account Not Found', HttpStatus.BAD_REQUEST);
+    }
+    return user;
   }
 }
