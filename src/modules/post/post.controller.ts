@@ -7,12 +7,15 @@ import {
   ParseIntPipe,
   Post,
   Put,
+  Query,
   UploadedFile,
   UseGuards,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { UserID } from 'shares/decorators/get-user-id.decorator';
 import { DecoratorUploadPostMedia } from 'shares/decorators/post-media.decorator';
+import { PageOptionsDto } from 'shares/dto/page-option.dto';
+import { PageDto } from 'shares/dto/page.dto';
 import { PostEntity } from 'src/model/entities/post.entity';
 import { JwtAuthGuard } from '../auth/guard/jwt-auth.guard';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -39,15 +42,21 @@ export class PostController {
   @Get('post')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  async getAllPost(@UserID() user_id: number): Promise<PostEntity[]> {
-    return await this.postService.getAllPost(user_id);
+  async getAllPost(
+    @Query() pageOptionsDto: PageOptionsDto,
+    @UserID() user_id: number,
+  ): Promise<PageDto<PostEntity>> {
+    return await this.postService.getAllPost(user_id, pageOptionsDto);
   }
 
   @Get('current-user-post')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  async getCurrentUserPost(@UserID() user_id: number): Promise<PostEntity[]> {
-    return await this.postService.getCurrentUserPost(user_id);
+  async getCurrentUserPost(
+    @Query() pageOptionsDto: PageOptionsDto,
+    @UserID() user_id: number,
+  ): Promise<PageDto<PostEntity>> {
+    return await this.postService.getCurrentUserPost(user_id, pageOptionsDto);
   }
 
   @Delete('post/:id')
