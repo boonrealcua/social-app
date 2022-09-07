@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   UploadedFile,
   UseGuards,
 } from '@nestjs/common';
@@ -57,7 +58,7 @@ export class UserController {
     return await this.userService.findUserById(user_id);
   }
 
-  @Post('user/update')
+  @Put('user/update')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   async updateUser(
