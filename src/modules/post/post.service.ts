@@ -1,5 +1,8 @@
 import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
+import { PageMetaDto } from 'shares/dto/page-meta.dto';
+import { PageOptionsDto } from 'shares/dto/page-option.dto';
+import { PageDto } from 'shares/dto/page.dto';
 import { PostEntity } from 'src/model/entities/post.entity';
 import { Repository } from 'typeorm';
 import { CreatePostDto } from './dto/create-post.dto';
@@ -27,22 +30,47 @@ export class PostService {
     return await this.postRepository.save(newPost);
   }
 
-  async getAllPost(user_id: number): Promise<PostEntity[]> {
-    const currentUserPost = await this.getCurrentUserPost(user_id);
-    const allPublicPost = await this.postRepository.find({
-      where: { private: false },
-      order: { createAt: 'DESC' },
-    });
+  async getAllPost(
+    user_id: number,
+    pageOptionsDto: PageOptionsDto,
+  ): Promise<PageDto<PostEntity>> {
+    const queryBuilder = this.postRepository
+      .createQueryBuilder()
+      .where('private = false')
+      .orWhere('user_id = :user_id', { user_id });
 
-    const data = [].concat(currentUserPost, allPublicPost);
-    return data;
+    queryBuilder
+      .orderBy('createAt', pageOptionsDto.order)
+      .skip(pageOptionsDto.skip)
+      .take(pageOptionsDto.take);
+
+    const itemCount = await queryBuilder.getCount();
+    const { entities } = await queryBuilder.getRawAndEntities();
+
+    const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
+
+    return new PageDto(entities, pageMetaDto);
   }
 
-  async getCurrentUserPost(user_id: number): Promise<PostEntity[]> {
-    return await this.postRepository.find({
-      where: { user_id: user_id },
-      order: { createAt: 'DESC' },
-    });
+  async getCurrentUserPost(
+    user_id: number,
+    pageOptionsDto: PageOptionsDto,
+  ): Promise<PageDto<PostEntity>> {
+    const queryBuilder = this.postRepository
+      .createQueryBuilder()
+      .where('user_id = :user_id', { user_id });
+
+    queryBuilder
+      .orderBy('createAt', pageOptionsDto.order)
+      .skip(pageOptionsDto.skip)
+      .take(pageOptionsDto.take);
+
+    const itemCount = await queryBuilder.getCount();
+    const { entities } = await queryBuilder.getRawAndEntities();
+
+    const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
+
+    return new PageDto(entities, pageMetaDto);
   }
 
   async deletePost(id: number, user_id: number): Promise<any> {
