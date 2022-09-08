@@ -151,7 +151,7 @@ export class UserService {
     return rs;
   }
 
-  uploadMediaUser(user_id: number, profileImg: string) {
+  async uploadMediaUser(user_id: number, profileImg: string) {
     return this.userRepository.update(user_id, { profileImg: profileImg });
   }
 }
