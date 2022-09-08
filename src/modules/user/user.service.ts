@@ -38,7 +38,7 @@ export class UserService {
     await this.userRepository.save(newUser);
     const { password, ...data } = newUser;
 
-    const accessToken = this.authService.generateAccessToken({
+    const accessToken = await this.authService.generateAccessToken({
       user_id: newUser.user_id,
     });
 
