@@ -61,7 +61,7 @@ export class UserService {
       throw new HttpException('UNAUTHORIZED', HttpStatus.UNAUTHORIZED);
     }
 
-    const accessToken = this.authService.generateAccessToken({
+    const accessToken = await this.authService.generateAccessToken({
       user_id: user.user_id,
     });
     const refreshToken = await this.authService.generateRefreshToken(
