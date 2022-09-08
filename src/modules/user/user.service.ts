@@ -38,7 +38,7 @@ export class UserService {
     await this.userRepository.save(newUser);
     const { password, ...data } = newUser;
 
-    const accessToken = this.authService.generateAccessToken({
+    const accessToken = await this.authService.generateAccessToken({
       user_id: newUser.user_id,
     });
 
@@ -61,7 +61,7 @@ export class UserService {
       throw new HttpException('UNAUTHORIZED', HttpStatus.UNAUTHORIZED);
     }
 
-    const accessToken = this.authService.generateAccessToken({
+    const accessToken = await this.authService.generateAccessToken({
       user_id: user.user_id,
     });
     const refreshToken = await this.authService.generateRefreshToken(
