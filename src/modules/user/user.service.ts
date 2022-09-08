@@ -36,9 +36,17 @@ export class UserService {
     newUser.password = await this.authService.hashPassword(user.password);
 
     await this.userRepository.save(newUser);
-    const { password, ...rs } = newUser;
+    const { password, ...data } = newUser;
 
-    return rs;
+    const accessToken = this.authService.generateAccessToken({
+      user_id: newUser.user_id,
+    });
+
+    const refreshToken = await this.authService.generateRefreshToken(
+      accessToken.accessToken,
+    );
+
+    return { data, ...accessToken, ...refreshToken };
   }
 
   async login(loginDTO: loginDto): Promise<ResponseLogin> {
