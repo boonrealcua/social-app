@@ -5,6 +5,7 @@ import { PageOptionsDto } from 'shares/dto/page-option.dto';
 import { PageDto } from 'shares/dto/page.dto';
 import { PostEntity } from 'src/model/entities/post.entity';
 import { Repository } from 'typeorm';
+import { UserService } from '../user/user.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/updatePost.dto';
 @Injectable()
@@ -12,6 +13,7 @@ export class PostService {
   constructor(
     @InjectRepository(PostEntity)
     private readonly postRepository: Repository<PostEntity>,
+    private readonly userService: UserService,
   ) {}
 
   async createPost(
@@ -34,7 +36,7 @@ export class PostService {
     user_id: number,
     pageOptionsDto: PageOptionsDto,
   ): Promise<PageDto<PostEntity>> {
-    const queryBuilder = this.postRepository
+    const queryBuilder = await this.postRepository
       .createQueryBuilder()
       .where('private = false')
       .orWhere('user_id = :user_id', { user_id });
@@ -47,9 +49,20 @@ export class PostService {
     const itemCount = await queryBuilder.getCount();
     const { entities } = await queryBuilder.getRawAndEntities();
 
+    const data = [];
+
+    for (let i = 0; i < entities.length; i++) {
+      data.push(
+        await [].concat(
+          entities[i],
+          await this.userService.findUserById(entities[i].user_id),
+        ),
+      );
+    }
+
     const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
 
-    return new PageDto(entities, pageMetaDto);
+    return new PageDto(data, pageMetaDto);
   }
 
   async getCurrentUserPost(
@@ -68,9 +81,20 @@ export class PostService {
     const itemCount = await queryBuilder.getCount();
     const { entities } = await queryBuilder.getRawAndEntities();
 
+    const data = [];
+
+    for (let i = 0; i < entities.length; i++) {
+      data.push(
+        await [].concat(
+          entities[i],
+          await this.userService.findUserById(entities[i].user_id),
+        ),
+      );
+    }
+
     const pageMetaDto = new PageMetaDto({ itemCount, pageOptionsDto });
 
-    return new PageDto(entities, pageMetaDto);
+    return new PageDto(data, pageMetaDto);
   }
 
   async deletePost(id: number, user_id: number): Promise<any> {
