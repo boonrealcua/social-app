@@ -9,7 +9,9 @@ dotenv.config();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.enableCors();
+  app.enableCors({
+    origin: 'http://localhost:3000',
+  });
   ConfigModule.forRoot();
 
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
@@ -23,6 +25,8 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, options);
   SwaggerModule.setup('apidoc', app, document);
-  await app.listen(process.env.APP_PORT, process.env.APP_HOST);
+  await app.listen(process.env.APP_PORT, '0.0.0.0', function () {
+    console.log('Listening to port:  ' + process.env.APP_PORT);
+  });
 }
 bootstrap();
