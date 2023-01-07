@@ -13,7 +13,7 @@ async function bootstrap() {
     origin: 'http://localhost:3000',
   });
   ConfigModule.forRoot();
-
+  app.setGlobalPrefix('api/v1');
   app.useGlobalPipes(new ValidationPipe({ transform: true }));
 
   const options = new DocumentBuilder()
